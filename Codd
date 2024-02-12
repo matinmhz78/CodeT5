@@ -1,0 +1,355 @@
+import sympy as sp
+import numpy as np
+from sympy.stats import Uniform
+from sympy import latex, simplify
+from sympy import symbols,hessian , Eq
+from sympy import And
+from sympy import Interval, FiniteSet
+# Define the decision variables
+A_c, A_b= sp.symbols('A_c A_b')
+# Define the parameters
+Pb, Cm_p, P_bw, Pl_low, Ph_high, Pm, s_o, φ_o, Y_b, Y_c, Yl, Kh, Pi, β_c, β_m, α_b, β_b,  α_c, α_m,  γ1, γ2, θ, ω, δ, qm_p, ω_o, τ_o,W_b1, W_b2, ω_b, τ_b, ω_c, τ_c, K_m, K_c,K_i, Ki_m, Pmp, I_c, I_m, W_b, Pb_w, M, I, ψ_b, d_b = sp.symbols(
+    'Pb Cm_p P_bw Pl_low Ph_high Pm s_o φ_o Y_b Y_c Yl  Kh Pi β_c β_m β_b  α_c α_m α_b  γ1 γ2 θ ω δ qm_p ω_o τ_o W_b1 W_b2 ω_b τ_b ω_c τ_c K_m K_c K_i Ki_m Pmp I_c I_m W_b Pb_w M I ψ_b d_b')
+
+# Define the parameters and their corresponding ranges
+param_values = {
+    'Cm_p': 0.29866341 ,
+    's_o':0.28232143,
+    'Y_b': 0.12195122 ,
+    'Y_c':7968.8 ,
+    'β_c': 0.000017 ,
+    'β_m': 0.0008855,
+    'β_b': 0.000008734,
+    'α_c': 0.065247,
+    'α_m': 0.325147,
+    'α_b': 0.95045,
+    'θ': 0.003,
+    'qm_p': 21900,
+    'W_b1': 750,
+    'W_b2': 1300,
+    'ω_b': 0.00546341  ,
+    'τ_b': 0.00081544  ,
+    'ω_c': 0.05094619  ,
+    'τ_c': 0.03675334  ,
+    'K_m': 735, #61729.36,
+    'K_c': 1460,
+    'K_i': 0.001,
+    'Ki_m': 0.001,
+    'I_c': 0.00465942 ,
+    'I_m': 0.0035589268 ,
+    'W_b': 1025,
+    'Pb_w': 6.25,
+    'ψ_b': 0.05,
+    'd_b': 1,
+    'P_bw': 6.25,
+
+}
+
+
+
+# Define the function
+
+
+X=(s_o * A_c * Y_c) + ( α_c - β_c * (A_c * Y_c-K_c * A_b * Y_b))* (A_c * Y_c - K_c * A_b * Y_b)
+
+R=(α_m-β_m* ((A_b * Y_b * W_b * qm_p * d_b + ψ_b) - K_m * ( A_c * Y_c))) * ((A_b * Y_b * W_b * qm_p * d_b + ψ_b) - K_m * (A_c * Y_c))
+G=(( α_c + β_c * (K_c * A_b * Y_b-A_c * Y_c ) )* (K_c * A_b * Y_b-A_c * Y_c ))
+
+H=(α_m+β_m* (K_m * (A_c * Y_c)-(A_b * Y_b * W_b * qm_p * d_b + ψ_b))) * (K_m * ( A_c * Y_c)-(A_b * Y_b * W_b * qm_p * d_b + ψ_b))
+V=(A_b * Y_b * ω_b * qm_p * d_b+ψ_b)*Cm_p
+T=s_o* W_b2 * A_b * Y_b + (α_b - β_b * W_b2 * A_b * Y_b) * W_b2 * A_b * Y_b
+J= (ω_c * (A_c) + τ_c * ((A_c) - θ) ** 2) + ( ω_b* (A_b) +  τ_b * ((A_b) - θ) ** 2)
+O=I_c*K_i* ( A_c * Y_c) +I_m*Ki_m*(A_b * Y_b * W_b * qm_p * d_b+ψ_b)+P_bw * W_b1 * A_b * Y_b
+
+# Define the demand functions
+Ph_high =α_c - β_c * (A_c * Y_c-K_c * A_b * Y_b)
+Pmp=α_m-β_m*((A_b * Y_b * ω_b * qm_p * d_b + ψ_b) - K_m * (A_c * Y_c))
+Pb= (α_b - β_b * W_b2 * A_b * Y_b) 
+
+profit=(X+T+R)-(G+J+H+V+O)
+
+fx = sp.diff(profit, A_c)
+
+fy =sp.diff(profit, A_b)
+
+fxx = sp.diff(profit, A_c, A_c) 
+
+fyy = sp.diff(profit, A_b, A_b)
+
+fxy = sp.diff(profit, A_c, A_b)
+
+fyx = sp.diff(profit, A_b, A_c)
+
+f_deriv=fxx+fyy+fxy+fyx
+
+hessian_matrix = sp.Matrix([[fxx, fxy],
+                            [fyx, fyy]])
+simplify_fx= sp.simplify(fx)
+simplify_fy= sp.simplify(fy)
+
+eq1 = sp.Eq(simplify_fx , 0)
+eq2 = sp.Eq(simplify_fy, 0)
+
+simplify_optimal_value=sp.simplify (sp.solve((eq1,eq2),A_c,A_b) )
+
+Ab_cow_value=simplify_optimal_value[A_b]
+Ah_high_value=simplify_optimal_value[A_c]
+
+# Substitute numerical values into the expressions
+profit_numeric = profit.subs(param_values)
+fx_numeric = fx.subs(param_values)
+fy_numeric = fy.subs(param_values)
+Ph_high_numeric = Ph_high.subs(param_values)
+Pmp_numeric = Pmp.subs(param_values)
+Pb_numeric = Pb.subs(param_values)
+X_numeric = X.subs(param_values)
+T_numeric = T.subs(param_values)
+R_numeric = R.subs(param_values)
+G_numeric = G.subs(param_values)
+J_numeric = J.subs(param_values)
+H_numeric = H.subs(param_values)
+V_numeric = V.subs(param_values)
+O_numeric = O.subs(param_values)
+
+simplify_optimal_value_numeric=simplify_optimal_value.subs(param_values)
+
+
+
+hessian_matrix_numeric = hessian_matrix.subs(param_values)
+
+eq1_numeric = sp.Eq(fx_numeric , 0)
+eq2_numeric = sp.Eq(fy_numeric, 0)
+
+
+# Solve the system of equations with numerical values
+#solution_numeric = sp.solve((eq1_numeric, eq2_numeric), (A_c, A_b))
+# Solve the system of equations without conditions
+solution_numeric = sp.solve((eq1_numeric, eq2_numeric), (A_c, A_b), dict=True)
+
+# Filter solutions that satisfy conditions
+solutions_with_conditions = []
+for sol in solution_numeric:
+    A_c_value = sol[A_c].evalf()
+    A_b_value = sol[A_b].evalf()
+    print (f"""
+            Start Testing
+                {A_c_value = }
+               {A_b_value = }
+                {A_c_value + A_b_value = }
+                {A_c_value > 0 = }
+                {A_b_value > 0 = }
+                A_c_value + A_b_value = {int(A_c_value + A_b_value) == 1}
+            End Testing
+            
+        """)
+    
+    if A_c_value > 0 and A_b_value > 0 and int(A_c_value + A_b_value) == 1:
+        solutions_with_conditions.append(sol)
+
+
+
+# Access the numerical values of A_c and A_b with conditions applied
+A_c_values_with_conditions = [sol[A_c].evalf() for sol in solutions_with_conditions]
+A_b_values_with_conditions = [sol[A_b].evalf() for sol in solutions_with_conditions]
+
+# Print the number of solutions found
+print("Number of solutions found:", len(solution_numeric))
+
+# Print the number of solutions that satisfy the conditions
+print("Number of solutions that satisfy the conditions:", len(solutions_with_conditions))
+
+# Print the solutions that satisfy the conditions
+for i, (A_c_value, A_b_value) in enumerate(zip(A_c_values_with_conditions, A_b_values_with_conditions)):
+    print(f"Solution {i+1}:")
+    print("Numerical solution for A_c with conditions:", A_c_value)
+    print("Numerical solution for A_b with conditions:", A_b_value)
+    print("\n\n")
+
+
+
+# Access the numerical values of A_c and A_b
+#A_c_value = solution_numeric[A_c]
+#A_b_value = solution_numeric[A_b]
+
+
+profit_num = profit_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+fx_num = fx_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+fy_num = fy_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+Ph_high_num = Ph_high_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+Pmp_num = Pmp_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+Pb_num = Pb_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+X_num = X_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+T_num = T_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+R_num = R_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+G_num = G_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+J_num = J_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+H_num = H_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+V_num = V_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+O_num = O_numeric.subs({A_c: A_c_value, A_b: A_b_value})
+
+ffx_yb = sp.diff(Ab_cow_value, Y_b)
+ffx_qm = sp.diff(Ab_cow_value, qm_p)
+ffx_cm = sp.diff(Ab_cow_value, Cm_p)
+ffx_ωb = sp.diff(Ab_cow_value, ω_b)
+ffx_Im = sp.diff(Ab_cow_value, I_m)
+ffx_kim = sp.diff(Ab_cow_value, Ki_m)
+ffx_Kc = sp.diff(Ab_cow_value, K_c)
+ffx_α1 = sp.diff(Ab_cow_value, α_c)
+ffx_α4 = sp.diff(Ab_cow_value, α_m)
+ffx_α3 = sp.diff(Ab_cow_value, α_b)
+ffx_θ = sp.diff(Ab_cow_value, θ)
+ffx_τb = sp.diff(Ab_cow_value, τ_b)
+ffx_β3 = sp.diff(Ab_cow_value, β_b)
+ffx_ωb2 = sp.diff(Ab_cow_value, W_b2)
+ffx_ωb1 = sp.diff(Ab_cow_value, W_b1)
+ffx_ωb = sp.diff(Ab_cow_value, W_b)
+ffx_so = sp.diff(Ab_cow_value, s_o)
+
+ffx_β1 = sp.diff(Ab_cow_value, β_c)
+ffx_db = sp.diff(Ab_cow_value, d_b)
+ffx_ωh = sp.diff(Ab_cow_value, ω_c)
+ffx_τh = sp.diff(Ab_cow_value, τ_c)
+ffx_ki = sp.diff(Ab_cow_value, K_i)
+ffx_Ic = sp.diff(Ab_cow_value, I_c)
+ffx_Pbw = sp.diff(Ab_cow_value, P_bw)
+ffx_Km = sp.diff(Ab_cow_value, K_m)
+ffx_β4 = sp.diff(Ab_cow_value, β_m)
+
+
+ffy_yh = sp.diff(Ah_high_value, Y_c)
+ffy_qm = sp.diff(Ah_high_value, qm_p)
+ffy_cm = sp.diff(Ah_high_value, Cm_p)
+ffy_ωb = sp.diff(Ah_high_value, ω_b)
+ffy_Im = sp.diff(Ah_high_value, I_m)
+ffy_kim = sp.diff(Ah_high_value, Ki_m)
+ffy_Kc = sp.diff(Ah_high_value, K_c)
+ffy_α1 = sp.diff(Ah_high_value, α_c)
+ffy_α4 = sp.diff(Ah_high_value, α_m)
+ffy_α3 = sp.diff(Ah_high_value, α_b)
+ffy_θ = sp.diff(Ah_high_value, θ)
+ffy_τb = sp.diff(Ah_high_value, τ_b)
+ffy_β3 = sp.diff(Ah_high_value, β_b)
+ffy_β4 = sp.diff(Ah_high_value, β_m)
+ffy_ωb2 = sp.diff(Ah_high_value, W_b2)
+ffy_ωb1 = sp.diff(Ah_high_value, W_b1)
+ffy_ωb = sp.diff(Ah_high_value, W_b)
+ffy_so = sp.diff(Ah_high_value, s_o)
+
+ffy_β1 = sp.diff(Ah_high_value, β_c)
+ffy_db = sp.diff(Ah_high_value, d_b)
+ffy_ωh = sp.diff(Ah_high_value, ω_c)
+ffy_τh = sp.diff(Ah_high_value, τ_c)
+ffy_ki = sp.diff(Ah_high_value, K_i)
+ffy_Ic = sp.diff(Ah_high_value, I_c)
+ffy_Pbw = sp.diff(Ah_high_value, P_bw)
+ffy_Km = sp.diff(Ah_high_value, K_m)
+
+
+#latex_optimal_value = latex(optimal_value)
+#latex_H_mat = latex(hessian_matrix)
+#latex_f_div = latex(f_deriv)
+#latex_Ab_cow_value = latex(Ab_cow_value)
+#latex_Ah_high_value = latex(Ah_high_value)
+# Categorize and print the equations
+#print("Equations for the best solutions:")
+#print("simplify_optimal_value =", simplify_optimal_value)
+#print(" simplify_fx =", simplify_fx)
+#print("simplify_fy =", simplify_fy)
+#print(" Ab_cow =", Ab_cow_value)
+#print("Ah_high =", Ah_high_value)
+#print("hessian_matrix =", hessian_matrix)
+#print("f_deriv =", f_deriv)
+
+#print("ffx_yb =", ffx_yb)
+#print("ffx_qm =", ffx_qm)
+#print("ffx_cm =", ffx_cm)
+#print("ffx_ωb =", ffx_ωb)
+#print("ffx_Im =", ffx_Im)
+#print("ffx_kim =", ffx_kim)
+#print("ffx_Kc =", ffx_Kc)
+#print("ffx_α1 =", ffx_α1)
+#print("ffx_α4 =", ffx_α4)
+#print("ffx_α3 =", ffx_α3)
+#print("ffx_θ =", ffx_θ)
+#print("ffx_τb =", ffx_τb)
+#print("ffx_β3 =", ffx_β3)
+#print("ffx_ωb2 =", ffx_ωb2)
+#print("ffx_ωb1 =", ffx_ωb1)
+#print("ffx_ωb =", ffx_ωb)
+#print("ffx_so =", ffx_so)
+
+#print("ffx_β1 =", ffx_β1)
+#print("ffx_db =", ffx_db)
+#print("ffx_ωh =", ffx_ωh)
+#print("ffx_τh =", ffx_τh)
+#print("ffx_ki =", ffx_ki)
+#print("ffx_Ic =", ffx_Ic)
+#print("ffx_Pbw =", ffx_Pbw)
+#print("ffx_Km =", ffx_Km)
+#print("ffx_β4 =", ffx_β4)
+
+#print("ffy_yh =", ffy_yh)
+#print("ffy_qm =", ffy_qm)
+#print("ffy_cm =", ffy_Cm_p)
+#print("ffy_ωb =", ffy_ωb)
+#print("ffy_Im =", ffy_I_m)
+#print("ffy_kim =", ffy_ki_m)
+#print("ffy_Kc =", ffy_K_c)
+#print("ffy_α1 =", ffy_α_c)
+#print("ffy_α4 =", ffy_α_m)
+#print("ffy_α3 =", ffy_α_b)
+#print("ffy_θ =", ffy_θ)
+#print("ffy_τb =", ffy_τ_b)
+#print("ffy_β3 =", ffy_β_b)
+#print("ffy_ωb2 =", ffy_W_b2)
+#print("ffy_ωb1 =", ffy_W_b1)
+#print("ffy_ωb =", ffy_W_b)
+#print("ffy_so =", ffy_s_o)
+
+#print("ffy_β1 =", ffy_β_c)
+#print("ffy_db =", ffy_d_b)
+#print("ffy_ωh =", ffy_ω_h)
+#print("ffy_τh =", ffy_τ_h)
+#print("ffy_ki =", ffy_k_i)
+#print("ffy_Ic =", ffy_I_c)
+#print("ffy_Pbw =", ffy_P_bw)
+#print("ffy_Km =", ffy_K_m)
+#print("ffy_β4 =", ffy_β4)
+
+
+#print("\nLaTeX Equation:")
+#print(latex_optimal_value )
+#print(latex_Ab_cow_value)
+#print(latex_Ah_high_value)
+#print(latex_H_mat)
+#print(latex_f_div)
+#print("Numerical solution for A_c:", A_c_value.evalf())
+#print("Numerical solution for A_b:", A_b_value.evalf())
+
+#print("simplify_optimal_value_numeric=" , simplify_optimal_value_numeric)
+
+
+print("profit_numeric=" , profit_numeric)
+print("fx_numeric=", fx_numeric)
+print("fy_numeric=", fy_numeric)
+print("Ph_high_numeric= ", Ph_high_numeric)
+print("Pmp_numeric=", Pmp_numeric)
+print("Pb_numeric=", Pb_numeric)
+print("hessian_matrix_numeric =", hessian_matrix_numeric)
+print("solution_numeric=", solution_numeric)
+print("A_c_value=", A_c_value)
+print("A_b_value=", A_b_value)
+print("profit_num=", profit_num)
+print("fx_num=", fx_num)
+print("fy_num=", fy_num)
+print("Ph_high_num=", Ph_high_num)
+print("Pmp_num=", Pmp_num)
+print("Pb_num=", Pb_num)
+print("X_num=", X_num)
+print("T_num=", T_num)
+print("R_num=", R_num)
+print("G_num=", G_num)
+print("J_num=", J_num)
+print("H_num=", H_num)
+print("V_num=", V_num)
+print("O_num=", O_num)
